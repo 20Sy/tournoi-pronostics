@@ -1,0 +1,6 @@
+# Donnees et reglages propres a chaque installation
+data.json
+data-corrompu-*.json
+config.json
+.serveur.lock
+node_modules/

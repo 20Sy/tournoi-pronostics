@@ -1,0 +1,17 @@
+TOURNOI PRONOSTICS v1.0.0
+=========================
+
+1. Installer Node.js (version LTS) : https://nodejs.org
+2. Lancer le serveur :
+     Windows : double-clic sur LANCER-Windows.bat
+     Mac     : clic droit sur LANCER-Mac.command > Ouvrir
+     Linux   : ./LANCER-Linux.sh
+3. La page admin s'ouvre. Le mot de passe est affiche dans la fenetre
+   du serveur et enregistre dans config.json.
+4. Donner aux spectateurs l'adresse affichee (ex : http://192.168.1.50:3000).
+   Ils doivent etre sur le meme WiFi que le PC.
+
+NE PAS FERMER la fenetre du serveur pendant le tournoi.
+
+Notice complete : README.md
+Configuration du routeur WiFi : docs/ROUTEUR-WIFI.md
