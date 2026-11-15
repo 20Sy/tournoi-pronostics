@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8F%81%3C/text%3E%3C/svg%3E">
+<title>Admin - Tournoi Drone FPV</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #12141c; color: #e8e8ee; padding: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 14px; }
+  h2 { font-size: 16px; margin-bottom: 10px; color: #aeb5ff; }
+  .card { background: #1d2030; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  input, textarea { padding: 9px; font-size: 15px; border-radius: 8px; border: 1px solid #333850; background: #12141c; color: #fff; }
+  textarea { width: 100%; height: 220px; font-family: inherit; }
+  .btn { padding: 9px 14px; font-size: 14px; font-weight: 700; border: 0; border-radius: 8px; background: #5b6cff; color: #fff; cursor: pointer; }
+  .btn.red { background: #d9453b; }
+  .btn.ghost { background: #2a2e42; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .small { font-size: 13px; color: #9aa0b8; }
+  .url { font-size: 22px; font-weight: 800; color: #3ecf8e; margin: 6px 0; word-break: break-all; }
+  .err { color: #ff6b6b; margin-top: 8px; }
+  .jour { font-size: 13px; color: #9aa0b8; margin: 14px 0 6px; text-transform: uppercase; }
+  .match { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 10px; border-radius: 8px; background: #161925; margin-bottom: 6px; border-left: 4px solid #333850; }
+  .match.ouvert { border-left-color: #3ecf8e; }
+    .match.termine { border-left-color: #5b6cff; opacity: .75; }
+  .num { font-weight: 700; color: #9aa0b8; }
+  .vs { font-weight: 700; }
+  .meta { font-size: 12px; color: #9aa0b8; margin-top: 3px; }
+  .ctrl { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .sc { padding: 7px 10px; border-radius: 6px; border: 1px solid #333850; background: #12141c; color: #e8e8ee; font-weight: 700; cursor: pointer; }
+  .sc.on { background: #5b6cff; border-color: #5b6cff; }
+  .sc.x { color: #ff6b6b; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 6px 4px; border-bottom: 1px solid #2a2e42; text-align: left; }
+  td.n, th.n { text-align: right; }
+  th { font-size: 12px; color: #9aa0b8; }
+  .toast { position: fixed; right: 20px; bottom: 20px; background: #3ecf8e; color: #12141c; padding: 10px 18px; border-radius: 8px; font-weight: 700; display: none; }
+  .toast.e { background: #ff6b6b; color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔐 Admin – <span id="nomT">Tournoi</span> <span class="small" id="ver"></span></h1>
+
+  <div class="card" id="login">
+    <div class="row">
+      <input id="pwd" type="password" placeholder="Mot de passe admin">
+      <button class="btn" id="btnLogin">Entrer</button>
+    </div>
+    <div class="small" style="margin-top:8px">Le mot de passe est affiché dans la fenêtre du serveur et enregistré dans le fichier <b>config.json</b>.</div>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="card">
+      <h2>📱 Adresse à donner aux spectateurs (même WiFi)</h2>
+      <div id="urls"></div>
+      <div class="small">Si les téléphones n'arrivent pas à se connecter : vérifier qu'ils sont sur le même WiFi que ce PC, et autoriser Node.js dans le pare-feu Windows (réseaux privés).</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>🎮 Matchs</h2>
+        <div class="small">Résultat : score du pilote de gauche – score du pilote de droite (3 = victoire, 2 = défaite, 0 = crash).<br><b>Saisissez le résultat dès la fin de la course</b> : seuls les pronos placés au moins <span class="delai"></span> min avant la saisie comptent. Corriger un résultat garde l'heure de la 1re saisie.</div>
+        <div id="matchs"></div>
+      </div>
+      <div>
+        <div class="card"><h2>🏆 Pilotes</h2><div id="clPilotes"></div></div>
+        <div class="card"><h2>🎲 Pronostiqueurs</h2><div id="clParieurs"></div></div>
+        <div class="card">
+          <h2>👥 Liste des pilotes</h2>
+          <div class="small" style="margin-bottom:6px">Un nom par ligne. Regénérer recrée le calendrier et <b>efface les résultats et les pronos</b> (les comptes sont conservés).</div>
+          <textarea id="pilotes"></textarea>
+          <button class="btn ghost" id="btnPilotes" style="margin-top:8px">Regénérer le calendrier</button>
+        </div>
+        <div class="card">
+          <button class="btn red" id="btnReset">Tout remettre à zéro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let pwd = sessionStorage.getItem('admin_pwd') || '';
+let etat = null, pilotesInit = false;
+
+async function api(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ password: pwd }, body || {})) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.error || ('Erreur ' + r.status)); e.status = r.status; throw e; }
+  return d;
+}
+function toast(msg, erreur) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast' + (erreur ? ' e' : ''); t.style.display = 'block';
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', 2500);
+}
+const hhmm = ms => { const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+
+async function charger() {
+  if (!pwd) return;
+  try {
+    etat = await api('/api/admin/state');
+    $('#login').style.display = 'none'; $('#app').style.display = 'block';
+    afficher();
+  } catch (e) {
+    if (e.status === 403) { pwd = ''; sessionStorage.removeItem('admin_pwd'); $('#login').style.display = 'block'; $('#app').style.display = 'none'; $('#loginErr').textContent = e.message; }
+  }
+}
+
+function afficher() {
+  $('#nomT').textContent = etat.nomTournoi; $('#ver').textContent = 'v' + etat.version; document.title = 'Admin – ' + etat.nomTournoi;
+  document.querySelectorAll('.delai').forEach(e => e.textContent = etat.delai);
+  $('#urls').innerHTML = etat.ips.length
+    ? etat.ips.map(ip => `<div class="url">http://${esc(ip)}:${etat.port}</div>`).join('')
+    : '<div class="err">Aucun réseau détecté : connectez ce PC au WiFi.</div>';
+
+  let h = '', j = null;
+  etat.matchs.forEach(m => {
+    if (m.journee !== j) { j = m.journee; h += `<div class="jour">Journée ${j}</div>`; }
+    const st = m.statut === 'termine' ? 'Résultat saisi à ' + hhmm(m.resultAt) : 'Pronos ouverts';
+    h += `<div class="match ${m.statut}" data-mid="${m.id}">
+      <div class="num">#${m.id}</div>
+      <div><div class="vs">${esc(m.p1)} <span class="small">vs</span> ${esc(m.p2)}</div>
+        <div class="meta">${st} · ${m.nbPronos} prono(s)${m.repartition && Object.keys(m.repartition).length ? ' · retenus : ' + Object.entries(m.repartition).map(([s, n]) => esc(s) + '×' + n).join(' ') : ''}</div></div>
+      <div class="ctrl"><div class="row">${etat.scores.map(s => `<button class="sc ${m.score === s ? 'on' : ''}" data-s="${s}">${s}</button>`).join('')}
+        ${m.score ? '<button class="sc x" data-s="" title="Effacer">✕</button>' : ''}</div></div></div>`;
+  });
+  $('#matchs').innerHTML = h;
+
+  let t = '<table><tr><th>#</th><th>Pilote</th><th class="n">V/D/C</th><th class="n">Pts</th></tr>';
+  etat.classementPilotes.forEach((p, i) => t += `<tr><td>${i + 1}</td><td>${esc(p.nom)}</td><td class="n">${p.v}/${p.d}/${p.c}</td><td class="n"><b>${p.points}</b></td></tr>`);
+  $('#clPilotes').innerHTML = t + '</table>';
+
+  t = '<table><tr><th>#</th><th>Pseudo</th><th class="n">Pronos</th><th class="n">Pts</th></tr>';
+  if (!etat.classementParieurs.length) t += '<tr><td colspan="4" class="small">Aucun compte</td></tr>';
+  etat.classementParieurs.forEach((p, i) => t += `<tr><td>${i + 1}</td><td>${esc(p.pseudo)}</td><td class="n">${p.pronos}</td><td class="n"><b>${p.points}</b></td></tr>`);
+  $('#clParieurs').innerHTML = t + '</table>';
+
+  if (!pilotesInit) { $('#pilotes').value = etat.pilotes.join('\n'); pilotesInit = true; }
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  try {
+    if (b.id === 'btnLogin') {
+      pwd = $('#pwd').value; sessionStorage.setItem('admin_pwd', pwd); $('#loginErr').textContent = '';
+      return charger();
+    }
+    if (b.id === 'btnPilotes') {
+      if (!confirm('Regénérer le calendrier ? Les résultats et pronos seront effacés.')) return;
+      const liste = $('#pilotes').value.split('\n');
+      const d = await api('/api/admin/pilotes', { liste });
+      pilotesInit = false; toast(`Calendrier regénéré : ${d.nb} matchs`);
+    } else if (b.id === 'btnReset') {
+      if (!confirm('Tout effacer : résultats, pronos ET comptes des spectateurs ?')) return;
+      await api('/api/admin/reset'); pilotesInit = false; toast('Tout a été remis à zéro');
+    } else if (b.classList.contains('sc')) {
+      const mid = Number(b.closest('.match').dataset.mid);
+      if (!b.dataset.s && !confirm('Effacer le résultat du match #' + mid + ' ? (les pronos seront à nouveau ouverts)')) return;
+      await api('/api/admin/resultat', { matchId: mid, score: b.dataset.s || null });
+      toast(b.dataset.s ? `Résultat #${mid} : ${b.dataset.s}` : `Résultat #${mid} effacé`);
+    } else return;
+    charger();
+  } catch (err) { toast(err.message, true); }
+});
+
+$('#pwd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnLogin').click(); });
+
+if (pwd) charger(); else $('#login').style.display = 'block';
+setInterval(charger, 5000);
+</script>
+</body>
+</html>
