@@ -58,7 +58,7 @@ Une fenêtre de terminal s'ouvre et affiche :
 
 ```
 =================================================
-  TOURNOI DRONE FPV - PRONOSTICS v1.0.0
+  TOURNOI DRONE FPV - PRONOSTICS v1.1.0
 =================================================
   Page admin (ce PC) : http://localhost:3000/admin.html
   Mot de passe admin : 3f9a1c7e
@@ -115,6 +115,25 @@ Lecture d'un score : **score du pilote de gauche – score du pilote de droite**
 Scores possibles pour un duel : `3-2`, `2-3`, `3-0`, `0-3`, `0-0`.
 
 Une erreur de clic ? Cliquez sur le bon score (l'heure de la première saisie est conservée) ou sur **✕** pour effacer le résultat.
+
+### Prochains matchs et reports
+
+- En haut de la page admin et dans une **bannière fixe** chez les spectateurs, les **2 prochains matchs** sont affichés. Les spectateurs peuvent pronostiquer directement depuis la bannière.
+- Ils sont calculés **à partir du dernier résultat saisi**, dans l'ordre du calendrier. Si vous saisissez un match hors ordre (par exemple le #10 alors que le #4 n'est pas joué), la bannière repart du #11 ; les matchs sautés réapparaissent quand on arrive en fin de calendrier.
+- Un match ne peut pas avoir lieu ? Cliquez sur **Reporter** sous le match : il passe **en fin de file** et reçoit l'étiquette « Reporté ». Les pronos déjà placés sont conservés.
+- **Annuler le report** remet le match à sa place d'origine dans le calendrier.
+
+### Classement dans la page admin
+
+Le panneau **Classement** reste visible à droite pendant que vous faites défiler les matchs (sur grand écran). Deux cases à cocher choisissent l'affichage :
+
+| Cases cochées | Affichage |
+|---|---|
+| Sportif + Pronostiqueurs | Les deux classements l'un sous l'autre |
+| Sportif seul | Classement des pilotes |
+| Pronostiqueurs seul | Classement des pronos |
+
+Au moins une case reste cochée. Le choix est mémorisé par le navigateur.
 
 ## 7. Règles des pronostics
 
