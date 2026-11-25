@@ -13,7 +13,25 @@
   h2 { font-size: 16px; margin-bottom: 10px; color: #aeb5ff; }
   .card { background: #1d2030; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .side { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - 24px); overflow-y: auto; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .side { position: static; max-height: none; } }
+  .opts { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px; }
+  .opts label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .opts input { width: 17px; height: 17px; accent-color: #5b6cff; }
+  .sect { font-size: 13px; font-weight: 700; color: #aeb5ff; margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .4px; }
+  .sect:first-of-type { margin-top: 0; }
+  .next { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 600px) { .next { grid-template-columns: 1fr; } }
+  .nx { background: #161925; border-radius: 8px; padding: 10px 12px; border-left: 4px solid #ffb020; }
+  .nx .lab { font-size: 12px; color: #ffb020; font-weight: 700; text-transform: uppercase; }
+  .nx .vs { margin-top: 4px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+  .b-rep { background: #4a3a12; color: #ffb020; }
+  .b-next { background: #3a2f10; color: #ffcf5c; }
+  .match.prochain { box-shadow: inset 0 0 0 1px #ffb020; }
+  .lk { background: none; border: 0; color: #9aa0b8; font-size: 12px; text-decoration: underline; cursor: pointer; }
+  details summary { cursor: pointer; font-weight: 700; color: #aeb5ff; }
+  details[open] summary { margin-bottom: 10px; }
   input, textarea { padding: 9px; font-size: 15px; border-radius: 8px; border: 1px solid #333850; background: #12141c; color: #fff; }
   textarea { width: 100%; height: 220px; font-family: inherit; }
   .btn { padding: 9px 14px; font-size: 14px; font-weight: 700; border: 0; border-radius: 8px; background: #5b6cff; color: #fff; cursor: pointer; }
@@ -63,22 +81,37 @@
     </div>
 
     <div class="grid">
-      <div class="card">
-        <h2>🎮 Matchs</h2>
-        <div class="small">Résultat : score du pilote de gauche – score du pilote de droite (3 = victoire, 2 = défaite, 0 = crash).<br><b>Saisissez le résultat dès la fin de la course</b> : seuls les pronos placés au moins <span class="delai"></span> min avant la saisie comptent. Corriger un résultat garde l'heure de la 1re saisie.</div>
-        <div id="matchs"></div>
-      </div>
       <div>
-        <div class="card"><h2>🏆 Pilotes</h2><div id="clPilotes"></div></div>
-        <div class="card"><h2>🎲 Pronostiqueurs</h2><div id="clParieurs"></div></div>
         <div class="card">
-          <h2>👥 Liste des pilotes</h2>
-          <div class="small" style="margin-bottom:6px">Un nom par ligne. Regénérer recrée le calendrier et <b>efface les résultats et les pronos</b> (les comptes sont conservés).</div>
-          <textarea id="pilotes"></textarea>
-          <button class="btn ghost" id="btnPilotes" style="margin-top:8px">Regénérer le calendrier</button>
+          <h2>⏭️ Prochains matchs</h2>
+          <div id="prochains"></div>
+          <div class="small" style="margin-top:8px">Calculés à partir du dernier résultat saisi. Un match <b>reporté</b> passe en fin de file. Les spectateurs voient la même bannière.</div>
         </div>
         <div class="card">
-          <button class="btn red" id="btnReset">Tout remettre à zéro</button>
+          <details>
+            <summary>⚙️ Gestion du tournoi (pilotes, remise à zéro)</summary>
+            <div class="small" style="margin-bottom:6px">Liste des pilotes, un nom par ligne. Regénérer recrée le calendrier et <b>efface les résultats et les pronos</b> (les comptes sont conservés).</div>
+            <textarea id="pilotes"></textarea>
+            <div class="row" style="margin-top:8px; justify-content: space-between">
+              <button class="btn ghost" id="btnPilotes">Regénérer le calendrier</button>
+              <button class="btn red" id="btnReset">Tout remettre à zéro</button>
+            </div>
+          </details>
+        </div>
+        <div class="card">
+          <h2>🎮 Matchs</h2>
+          <div class="small">Résultat : score du pilote de gauche – score du pilote de droite (3 = victoire, 2 = défaite, 0 = crash).<br><b>Saisissez le résultat dès la fin de la course</b> : seuls les pronos placés au moins <span class="delai"></span> min avant la saisie comptent. Corriger un résultat garde l'heure de la 1re saisie.</div>
+          <div id="matchs"></div>
+        </div>
+      </div>
+      <div class="side">
+        <div class="card">
+          <h2>🏆 Classement</h2>
+          <div class="opts">
+            <label><input type="checkbox" id="optPilotes" checked> Sportif (pilotes)</label>
+            <label><input type="checkbox" id="optParieurs" checked> Pronostiqueurs</label>
+          </div>
+          <div id="classement"></div>
         </div>
       </div>
     </div>
@@ -91,6 +124,13 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let pwd = sessionStorage.getItem('admin_pwd') || '';
 let etat = null, pilotesInit = false;
+let vue = { pilotes: true, parieurs: true };
+try { Object.assign(vue, JSON.parse(localStorage.getItem('admin_vue_classement') || '{}')); } catch (e) {}
+if (!vue.pilotes && !vue.parieurs) vue.pilotes = true;
+function majOptions() {
+  $('#optPilotes').checked = vue.pilotes; $('#optParieurs').checked = vue.parieurs;
+  try { localStorage.setItem('admin_vue_classement', JSON.stringify(vue)); } catch (e) {}
+}
 
 async function api(url, body) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ password: pwd }, body || {})) });
@@ -115,6 +155,23 @@ async function charger() {
   }
 }
 
+function afficherClassement() {
+  if (!etat) return;
+  let t = '';
+  if (vue.pilotes) {
+    t += (vue.parieurs ? '<div class="sect">Sportif – pilotes</div>' : '') + '<table><tr><th>#</th><th>Pilote</th><th class="n">V/D/C</th><th class="n">Pts</th></tr>';
+    etat.classementPilotes.forEach((p, i) => t += `<tr><td>${i + 1}</td><td>${esc(p.nom)}</td><td class="n">${p.v}/${p.d}/${p.c}</td><td class="n"><b>${p.points}</b></td></tr>`);
+    t += '</table>';
+  }
+  if (vue.parieurs) {
+    t += (vue.pilotes ? '<div class="sect">Pronostiqueurs</div>' : '') + '<table><tr><th>#</th><th>Pseudo</th><th class="n">Pronos</th><th class="n">Pts</th></tr>';
+    if (!etat.classementParieurs.length) t += '<tr><td colspan="4" class="small">Aucun compte</td></tr>';
+    etat.classementParieurs.forEach((p, i) => t += `<tr><td>${i + 1}</td><td>${esc(p.pseudo)}</td><td class="n">${p.pronos}</td><td class="n"><b>${p.points}</b></td></tr>`);
+    t += '</table>';
+  }
+  $('#classement').innerHTML = t;
+}
+
 function afficher() {
   $('#nomT').textContent = etat.nomTournoi; $('#ver').textContent = 'v' + etat.version; document.title = 'Admin – ' + etat.nomTournoi;
   document.querySelectorAll('.delai').forEach(e => e.textContent = etat.delai);
@@ -122,27 +179,35 @@ function afficher() {
     ? etat.ips.map(ip => `<div class="url">http://${esc(ip)}:${etat.port}</div>`).join('')
     : '<div class="err">Aucun réseau détecté : connectez ce PC au WiFi.</div>';
 
+  const prochains = etat.prochains || [];
+  const parId = Object.fromEntries(etat.matchs.map(m => [m.id, m]));
+  $('#prochains').innerHTML = prochains.length
+    ? '<div class="next">' + prochains.map((id, i) => {
+        const m = parId[id];
+        return `<div class="nx"><div class="lab">${i === 0 ? 'Prochain match' : 'Ensuite'} · #${m.id} · J${m.journee}${m.reporte ? ' <span class="badge b-rep">Reporté</span>' : ''}</div>
+          <div class="vs">${esc(m.p1)} <span class="small">vs</span> ${esc(m.p2)}</div></div>`;
+      }).join('') + '</div>'
+    : '<div class="small">Tous les matchs ont un résultat. 🏁</div>';
+
   let h = '', j = null;
   etat.matchs.forEach(m => {
     if (m.journee !== j) { j = m.journee; h += `<div class="jour">Journée ${j}</div>`; }
     const st = m.statut === 'termine' ? 'Résultat saisi à ' + hhmm(m.resultAt) : 'Pronos ouverts';
-    h += `<div class="match ${m.statut}" data-mid="${m.id}">
+    const rang = prochains.indexOf(m.id);
+    const badges = (rang === 0 ? '<span class="badge b-next">Prochain</span>' : rang === 1 ? '<span class="badge b-next">Ensuite</span>' : '')
+      + (m.reporte && !m.score ? '<span class="badge b-rep">Reporté</span>' : '');
+    const report = m.score ? '' : (m.reporte
+      ? '<button class="lk" data-rep="annuler">Annuler le report</button>'
+      : '<button class="lk" data-rep="reporter">Reporter</button>');
+    h += `<div class="match ${m.statut}${rang >= 0 ? ' prochain' : ''}" data-mid="${m.id}">
       <div class="num">#${m.id}</div>
-      <div><div class="vs">${esc(m.p1)} <span class="small">vs</span> ${esc(m.p2)}</div>
+      <div><div class="vs">${esc(m.p1)} <span class="small">vs</span> ${esc(m.p2)}${badges}</div>
         <div class="meta">${st} · ${m.nbPronos} prono(s)${m.repartition && Object.keys(m.repartition).length ? ' · retenus : ' + Object.entries(m.repartition).map(([s, n]) => esc(s) + '×' + n).join(' ') : ''}</div></div>
       <div class="ctrl"><div class="row">${etat.scores.map(s => `<button class="sc ${m.score === s ? 'on' : ''}" data-s="${s}">${s}</button>`).join('')}
-        ${m.score ? '<button class="sc x" data-s="" title="Effacer">✕</button>' : ''}</div></div></div>`;
+        ${m.score ? '<button class="sc x" data-s="" title="Effacer">✕</button>' : ''}</div>${report}</div></div>`;
   });
   $('#matchs').innerHTML = h;
-
-  let t = '<table><tr><th>#</th><th>Pilote</th><th class="n">V/D/C</th><th class="n">Pts</th></tr>';
-  etat.classementPilotes.forEach((p, i) => t += `<tr><td>${i + 1}</td><td>${esc(p.nom)}</td><td class="n">${p.v}/${p.d}/${p.c}</td><td class="n"><b>${p.points}</b></td></tr>`);
-  $('#clPilotes').innerHTML = t + '</table>';
-
-  t = '<table><tr><th>#</th><th>Pseudo</th><th class="n">Pronos</th><th class="n">Pts</th></tr>';
-  if (!etat.classementParieurs.length) t += '<tr><td colspan="4" class="small">Aucun compte</td></tr>';
-  etat.classementParieurs.forEach((p, i) => t += `<tr><td>${i + 1}</td><td>${esc(p.pseudo)}</td><td class="n">${p.pronos}</td><td class="n"><b>${p.points}</b></td></tr>`);
-  $('#clParieurs').innerHTML = t + '</table>';
+  afficherClassement();
 
   if (!pilotesInit) { $('#pilotes').value = etat.pilotes.join('\n'); pilotesInit = true; }
 }
@@ -163,6 +228,10 @@ document.addEventListener('click', async e => {
     } else if (b.id === 'btnReset') {
       if (!confirm('Tout effacer : résultats, pronos ET comptes des spectateurs ?')) return;
       await api('/api/admin/reset'); pilotesInit = false; toast('Tout a été remis à zéro');
+    } else if (b.dataset.rep) {
+      const mid = Number(b.closest('.match').dataset.mid);
+      const d = await api('/api/admin/reporter', { matchId: mid, annuler: b.dataset.rep === 'annuler' });
+      toast(d.reporte ? `Match #${mid} reporté en fin de file` : `Match #${mid} remis à sa place`);
     } else if (b.classList.contains('sc')) {
       const mid = Number(b.closest('.match').dataset.mid);
       if (!b.dataset.s && !confirm('Effacer le résultat du match #' + mid + ' ? (les pronos seront à nouveau ouverts)')) return;
@@ -172,6 +241,16 @@ document.addEventListener('click', async e => {
     charger();
   } catch (err) { toast(err.message, true); }
 });
+
+document.addEventListener('change', e => {
+  if (e.target.id !== 'optPilotes' && e.target.id !== 'optParieurs') return;
+  vue.pilotes = $('#optPilotes').checked; vue.parieurs = $('#optParieurs').checked;
+  if (!vue.pilotes && !vue.parieurs) {           // au moins un classement affiché
+    if (e.target.id === 'optPilotes') vue.parieurs = true; else vue.pilotes = true;
+  }
+  majOptions(); afficherClassement();
+});
+majOptions();
 
 $('#pwd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnLogin').click(); });
 
