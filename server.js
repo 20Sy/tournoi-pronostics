@@ -9,7 +9,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 // Les reglages sont dans config.json (cree automatiquement au 1er lancement).
 const CONFIG_FILE = path.join(__dirname, 'config.json');
@@ -71,7 +71,7 @@ function genererMatchs(pilotes) {
   let id = 1;
   roundRobin(pilotes).forEach((j, ji) => {
     j.forEach(([p1, p2]) => {
-      matchs.push({ id: id++, journee: ji + 1, p1, p2, score: null, resultAt: null });
+      matchs.push({ id: id, ordre: id, journee: ji + 1, p1, p2, score: null, resultAt: null, reporte: false }); id++;
     });
   });
   return matchs;
@@ -92,7 +92,12 @@ function charger() {
           if (typeof data.pronos[mid][k] === 'string') data.pronos[mid][k] = [{ s: data.pronos[mid][k], t: 0 }];
         }
       }
-      data.matchs.forEach(m => { delete m.horaire; if (m.resultAt === undefined) m.resultAt = m.score ? Date.now() : null; });
+      data.matchs.forEach(m => {
+        delete m.horaire;
+        if (m.resultAt === undefined) m.resultAt = m.score ? Date.now() : null;
+        if (m.ordre === undefined) m.ordre = m.id;
+        if (m.reporte === undefined) m.reporte = false;
+      });
       return;
     }
   } catch (e) {
@@ -147,7 +152,8 @@ function vueEtat(key) {
     const pr = data.pronos[m.id] || {};
     const o = {
       id: m.id, journee: m.journee, p1: m.p1, p2: m.p2,
-      score: m.score, resultAt: m.resultAt, statut: st, nbPronos: Object.keys(pr).length
+      score: m.score, resultAt: m.resultAt, statut: st, nbPronos: Object.keys(pr).length,
+      ordre: m.ordre, reporte: !!m.reporte
     };
     if (st === 'termine') {
       const rep = {};
@@ -195,8 +201,21 @@ function vueEtat(key) {
   return {
     serverTime: now, delai: DELAI_MIN, nomTournoi: CFG.nomTournoi, version: VERSION, scores: SCORES,
     connecte: !!key, pseudo: key ? data.parieurs[key].pseudo : null,
-    pilotes: data.pilotes, matchs, classementPilotes, classementParieurs
+    pilotes: data.pilotes, matchs, classementPilotes, classementParieurs, prochains: prochainsMatchs(2)
   };
+}
+
+// Prochains matchs : a partir du dernier resultat saisi, dans l'ordre de passage
+// (un match reporte passe en fin de file). On revient au debut si besoin.
+function prochainsMatchs(n) {
+  const ouverts = data.matchs.filter(m => !m.score).sort((a, b) => a.ordre - b.ordre);
+  if (!ouverts.length) return [];
+  let dernier = null;
+  data.matchs.forEach(m => { if (m.score && (!dernier || m.resultAt > dernier.resultAt)) dernier = m; });
+  const depuis = dernier ? dernier.ordre : -Infinity;
+  const apres = ouverts.filter(m => m.ordre > depuis);
+  const avant = ouverts.filter(m => m.ordre <= depuis);
+  return apres.concat(avant).slice(0, n).map(m => m.id);
 }
 
 let portActuel = PORT_DEPART;
@@ -268,6 +287,23 @@ const routes = {
     data.pronos = {};
     sauver();
     return { ok: true, nb: data.matchs.length };
+  },
+
+  'POST /api/admin/reporter': b => {
+    admin(b);
+    const m = data.matchs.find(x => x.id === Number(b.matchId));
+    if (!m) throw err(404, 'Match introuvable');
+    if (m.score) throw err(400, 'Ce match a deja un resultat');
+    if (b.annuler) {
+      m.reporte = false;
+      m.ordre = m.id;            // reprend sa place d'origine dans le calendrier
+    } else {
+      m.reporte = true;
+      m.ordre = Math.max(...data.matchs.map(x => x.ordre)) + 1;   // passe en fin de file
+    }
+    sauver();
+    console.log(`Match ${m.id} (${m.p1} vs ${m.p2}) : ${m.reporte ? 'reporte' : 'remis a sa place'}`);
+    return { ok: true, reporte: m.reporte };
   },
 
   'POST /api/admin/reset': b => {
